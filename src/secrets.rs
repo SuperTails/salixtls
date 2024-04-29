@@ -157,23 +157,10 @@ pub fn dump_premaster_secrets(path: &str, host: &str, client_random: &Random, ha
 
 #[cfg(test)]
 mod test {
-	use crate::wire::{Handshake, PacketReader};
+	use crate::{util::{parse_hex, parse_hex_32}, wire::{Handshake, PacketReader}};
 
 	use super::*;
 
-	fn parse_hex(mut s: &str) -> Vec<u8> {
-		let mut result = Vec::new();
-		while !s.is_empty() {
-			s = s.trim();
-			result.push(u8::from_str_radix(&s[..2], 16).unwrap());
-			s = &s[2..];
-		}
-		result
-	}
-
-	fn parse_hex_32(s: &str) -> [u8; 32] {
-		parse_hex(s).try_into().unwrap()
-	}
 
 	#[test]
 	fn rfc8448_simple_1_rtt_handshake() {

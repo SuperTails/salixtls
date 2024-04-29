@@ -11,6 +11,8 @@ pub mod hkdf;
 pub mod secrets;
 pub mod premaster_secrets;
 pub mod stream;
+pub mod sha256;
+pub mod util;
 
 fn query_dns() {
     let sock = UdpSocket::bind("0.0.0.0:0").unwrap();
