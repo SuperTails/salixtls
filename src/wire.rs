@@ -91,7 +91,7 @@ uint8 CipherSuite[2];    /* Cryptographic suite selector */
 #[derive(Debug)]
 pub struct ProtocolVersion(pub u16);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Random(pub [u8; 32]);
 
 impl Random {
@@ -119,12 +119,17 @@ pub struct CipherSuite(u16);
 
 impl CipherSuite {
 	pub const TLS_AES_128_GCM_SHA256: CipherSuite = CipherSuite(0x13_01);
+
+	pub const TLS_AES_128_CCM_SHA256: CipherSuite = CipherSuite(0x13_04);
+
 }
 
 #[derive(Debug)]
 pub struct NamedGroup(pub u16);
 
 impl NamedGroup {
+	pub const SECP251R1: NamedGroup = NamedGroup(0x0017);
+
 	pub const X25519: NamedGroup = NamedGroup(0x001D);
 
 	pub const FFDHE2048: NamedGroup = NamedGroup(0x0100);

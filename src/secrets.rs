@@ -1,7 +1,9 @@
+use std::io::Write;
+
 use rand::{rngs::StdRng, SeedableRng};
 use x25519_dalek::{EphemeralSecret, PublicKey};
 
-use crate::hkdf::{self, TranscriptHash};
+use crate::{hkdf::{self, TranscriptHash}, wire::Random};
 
 pub struct EcdhKeypair {
 	pub private: EphemeralSecret,
@@ -11,6 +13,14 @@ pub struct EcdhKeypair {
 impl EcdhKeypair {
 	pub fn generate() -> Self {
 		let private = EphemeralSecret::random_from_rng(StdRng::from_entropy());
+		let public = PublicKey::from(&private);
+		EcdhKeypair { private, public }
+	}
+
+	pub fn generate_sus() -> Self {
+		let mut sus = [0_u8; 32];
+		sus[0] = 1;
+		let private = unsafe { std::mem::transmute::<_, EphemeralSecret>(sus) };
 		let public = PublicKey::from(&private);
 		EcdhKeypair { private, public }
 	}
@@ -52,7 +62,10 @@ pub struct HandshakeSecrets {
 
 impl HandshakeSecrets {
 	pub fn generate(early: &EarlySecrets, ecdh: EcdhKeypair, server_pubkey: &PublicKey, transcript: &TranscriptHash) -> Self {
+		println!("PRIVATE KEY: {:?}", unsafe { std::mem::transmute::<_, &[u8; 32]>(&ecdh.private) });
+		println!("SERVER PUBKEY {:?}", server_pubkey);
 		let shared_secret = ecdh.private.diffie_hellman(server_pubkey);
+		println!("SHARED SECRET {:?}", shared_secret.as_bytes());
 
 		let early_derived = hkdf::derive_secret(&early.early_secret, b"derived", &TranscriptHash::default());
 		let handshake_secret = hkdf::extract(&early_derived, shared_secret.as_bytes());
@@ -105,6 +118,41 @@ impl MasterSecrets {
 			client_write_key,
 		}
 	}
+}
+
+struct HexDump<'a>(&'a [u8]);
+
+impl std::fmt::Display for HexDump<'_> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		for b in self.0 {
+			write!(f, "{:02x}", b)?;
+		}
+		Ok(())
+	}
+}
+
+pub fn dump_premaster_secrets(path: &str, host: &str, client_random: &Random, handshake: &HandshakeSecrets) {
+	let mut f = std::fs::File::create(path).unwrap();
+
+	let comment = format!("# SalixTLS request to host `{host}`\n");
+	
+	f.write_all(comment.as_bytes()).unwrap();
+
+	let chts = format!(
+		"CLIENT_HANDSHAKE_TRAFFIC_SECRET {} {}\n",
+		HexDump(&client_random.0),
+		HexDump(&handshake.client_handshake_traffic_secret),
+	);
+
+	f.write_all(chts.as_bytes()).unwrap();
+
+	let shts = format!(
+		"SERVER_HANDSHAKE_TRAFFIC_SECRET {} {}\n",
+		HexDump(&client_random.0),
+		HexDump(&handshake.server_handshake_traffic_secret),
+	);
+
+	f.write_all(shts.as_bytes()).unwrap();
 }
 
 #[cfg(test)]

@@ -50,7 +50,7 @@ pub fn derive_secret(secret: &[u8; 32], label: &[u8], messages: &TranscriptHash)
 	expand_label(secret, label, &messages.compute(), 32).try_into().unwrap()
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TranscriptHash {
 	hash: Sha256,
 }

@@ -2,14 +2,14 @@ use std::{io::{self, Read, Write}, net::TcpStream};
 
 use crate::wire::{PacketReader, PlaintextError, TLSPlaintext};
 
-pub struct TlsStream {
+pub struct TlsRecordStream {
 	pub socket: TcpStream,
 	pub buffer: PacketReader,
 }
 
-impl TlsStream {
+impl TlsRecordStream {
 	pub fn new(socket: TcpStream) -> Self {
-		TlsStream {
+		TlsRecordStream {
 			socket,
 			buffer: PacketReader::new(Vec::new()),
 		}
